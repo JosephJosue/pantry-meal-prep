@@ -2,7 +2,7 @@
 FROM node:20-slim AS deps
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y build-essential python
+RUN apt-get update && apt-get install -y build-essential python3
 
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
