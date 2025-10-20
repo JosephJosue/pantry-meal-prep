@@ -12,32 +12,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Prepara el nombre de la imagen en minúsculas, incluyendo el registro
+      # Prepara el nombre de la imagen en minúsculas
       - name: Prepare image name
         id: prep
         run: |
-          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Log in to the Container registry
+      - name: Log in to GitHub Container Registry
         uses: redhat-actions/podman-login@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.CR_PAT }}
 
-      - name: Build and push container image
+      # 1. Construye la imagen
+      - name: Build container image
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ steps.prep.outputs.IMAGE_NAME }}
           tags: latest
-          push: 'true'
           containerfiles: |
             ./Containerfile
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      # 2. Sube la imagen al registro
+      - name: Push to GitHub Container Registry
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+
       - name: Print image URL
-        run: echo "Image pushed to ${{ steps.build-image.outputs.image-with-tag }}"
+        run: echo "Image pushed to ghcr.io/${{ steps.prep.outputs.IMAGE_NAME }}:latest"
