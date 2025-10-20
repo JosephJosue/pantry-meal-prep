@@ -1,5 +1,7 @@
-import { generateText } from "ai"
-import { type NextRequest, NextResponse } from "next/server"
+import { generateText } from "ai";
+import { openai } from '@ai-sdk/openai';
+import { type NextRequest, NextResponse } from "next/server";
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +48,7 @@ The matchedIngredients array should contain the lowercase names of ingredients f
 Return ONLY the JSON array, no additional text.`
 
     const { text } = await generateText({
-      model: "openai/gpt-4o-mini",
+      model: openai("gpt-4o-mini"),
       prompt,
       temperature: 0.8,
     })
@@ -67,7 +69,8 @@ Return ONLY the JSON array, no additional text.`
 
     return NextResponse.json({ recipes })
   } catch (error) {
-    console.error("Error generating recipes:", error)
-    return NextResponse.json({ error: "Failed to generate recipes" }, { status: 500 })
+    console.error("Error generating recipes:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: "Failed to generate recipes", details: errorMessage }, { status: 500 });
   }
 }

@@ -41,15 +41,26 @@ export function RecipeRecommendations({ groceryItems, userId }: RecipeRecommenda
       })
 
       if (!response.ok) {
-        throw new Error("Failed to generate recipes")
+        const error: any = new Error("Failed to generate recipes");
+        error.response = response;
+        throw error;
       }
 
       const data = await response.json()
       setRecipes(data.recipes)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      if (err instanceof Error) {
+        try {
+          const errorResponse = await (err as any).response.json();
+          setError(`Error: ${errorResponse.details || err.message}`);
+        } catch (e) {
+          setError(err.message);
+        }
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
