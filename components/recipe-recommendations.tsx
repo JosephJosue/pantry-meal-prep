@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2 } from "lucide-react"
 import type { GroceryItem } from "@/lib/types"
 import { RecipeCard } from "./recipe-card"
@@ -28,6 +30,7 @@ export function RecipeRecommendations({ groceryItems, userId }: RecipeRecommenda
   const [recipes, setRecipes] = useState<GeneratedRecipe[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mealType, setMealType] = useState<string>("any")
 
   const generateRecipes = async () => {
     setIsLoading(true)
@@ -37,13 +40,13 @@ export function RecipeRecommendations({ groceryItems, userId }: RecipeRecommenda
       const response = await fetch("/api/generate-recipes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groceryItems }),
+        body: JSON.stringify({ groceryItems, mealType }),
       })
 
       if (!response.ok) {
-        const error: any = new Error("Failed to generate recipes");
-        error.response = response;
-        throw error;
+        const error: any = new Error("Failed to generate recipes")
+        error.response = response
+        throw error
       }
 
       const data = await response.json()
@@ -51,16 +54,16 @@ export function RecipeRecommendations({ groceryItems, userId }: RecipeRecommenda
     } catch (err) {
       if (err instanceof Error) {
         try {
-          const errorResponse = await (err as any).response.json();
-          setError(`Error: ${errorResponse.details || err.message}`);
+          const errorResponse = await (err as any).response.json()
+          setError(`Error: ${errorResponse.details || err.message}`)
         } catch (e) {
-          setError(err.message);
+          setError(err.message)
         }
       } else {
-        setError("An unexpected error occurred");
+        setError("An unexpected error occurred")
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -99,6 +102,23 @@ export function RecipeRecommendations({ groceryItems, userId }: RecipeRecommenda
               </Badge>
             ))}
             {groceryItems.length > 10 && <Badge variant="outline">+{groceryItems.length - 10} more</Badge>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="meal-type" className="mb-2 block">
+              Meal Type
+            </Label>
+            <Select value={mealType} onValueChange={setMealType}>
+              <SelectTrigger id="meal-type" className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Select meal type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any Meal</SelectItem>
+                <SelectItem value="breakfast">Breakfast</SelectItem>
+                <SelectItem value="lunch">Lunch</SelectItem>
+                <SelectItem value="dinner">Dinner</SelectItem>
+                <SelectItem value="snack">Snack</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={generateRecipes} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? (

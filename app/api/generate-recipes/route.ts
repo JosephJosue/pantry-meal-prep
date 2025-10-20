@@ -1,11 +1,10 @@
-import { generateText } from "ai";
-import { openai } from '@ai-sdk/openai';
-import { type NextRequest, NextResponse } from "next/server";
-
+import { generateText } from "ai"
+import { openai } from "@ai-sdk/openai"
+import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { groceryItems } = await request.json()
+    const { groceryItems, mealType = "any" } = await request.json()
 
     if (!groceryItems || groceryItems.length === 0) {
       return NextResponse.json({ error: "No grocery items provided" }, { status: 400 })
@@ -14,9 +13,12 @@ export async function POST(request: NextRequest) {
     // Format grocery items for the AI prompt
     const ingredientsList = groceryItems.map((item: any) => `${item.name} (${item.quantity} ${item.unit})`).join(", ")
 
-    const prompt = `You are a professional chef and recipe creator. Based on the following available ingredients, generate 3 creative and delicious recipes that can be made using these ingredients. You can suggest additional common pantry staples if needed.
+    const mealTypeContext = mealType !== "any" ? `Generate recipes specifically suitable for ${mealType}. ` : ""
+
+    const prompt = `You are a professional chef and recipe creator. ${mealTypeContext}Based on the following available ingredients, generate 3 creative and delicious recipes that can be made using these ingredients. You can suggest additional common pantry staples if needed.
 
 Available ingredients: ${ingredientsList}
+${mealType !== "any" ? `Meal type: ${mealType}` : ""}
 
 For each recipe, provide:
 1. A creative and appetizing title
@@ -69,8 +71,8 @@ Return ONLY the JSON array, no additional text.`
 
     return NextResponse.json({ recipes })
   } catch (error) {
-    console.error("Error generating recipes:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    return NextResponse.json({ error: "Failed to generate recipes", details: errorMessage }, { status: 500 });
+    console.error("Error generating recipes:", error)
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+    return NextResponse.json({ error: "Failed to generate recipes", details: errorMessage }, { status: 500 })
   }
 }
