@@ -1,20 +1,24 @@
 name: CI/CD - Build and Push Container Image
 
-# Se ejecuta en cada push a la rama 'main'
 on:
-    push:
-        branches: [ "main" ]
+  push:
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Clona el código del repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Inicia sesión en el GitHub Container Registry (GHCR)
+      # Prepara el nombre de la imagen en minúsculas, incluyendo el registro
+      - name: Prepare image name
+        id: prep
+        run: |
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+
       - name: Log in to the Container registry
         uses: redhat-actions/podman-login@v1
         with:
@@ -22,26 +26,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.CR_PAT }}
 
-      # 3. Construye y sube la imagen del contenedor
       - name: Build and push container image
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ github.repository }}
+          image: ${{ steps.prep.outputs.IMAGE_NAME }}
           tags: latest
+          push: 'true'
           containerfiles: |
             ./Containerfile
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      # 4. Transforma el nombre de la imagen a minúsculas para la URL
-      - name: Convert image name to lowercase
-        id: image-case
-        uses: ASzc/change-string-case-action@v6
-        with:
-          string: ${{ steps.build-image.outputs.image-with-tag }}
-
-      # 5. Muestra la URL de la imagen publicada
       - name: Print image URL
-        run: echo "Image pushed to ${{ steps.image-case.outputs.lowercase }}"
+        run: echo "Image pushed to ${{ steps.build-image.outputs.image-with-tag }}"
