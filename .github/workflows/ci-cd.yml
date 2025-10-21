@@ -48,6 +48,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.CR_PAT }}
-
+      # 3. imprime imagen
       - name: Print image URL
         run: echo "Image pushed to ghcr.io/${{ steps.prep.outputs.IMAGE_NAME }}:latest"
